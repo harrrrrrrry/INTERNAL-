@@ -40,20 +40,25 @@ def render_login_page():
     if request.method == 'POST':
         email = request.form.get('user_email').strip().lower()
         password = request.form.get('user_password')
+        query = 'SELECT user_fname, user_lname, user_email, user_password FROM users WHERE user_email = ?, ?, ?, ?, ?'
         con = connect_database(DATABASE)
         cur = con.cursor()
-        query = 'SELECT user_fname, user_lname, user_email, user_password FROM users WHERE user_email = ?'
         cur.execute(query, (email,))
-        results = cur.fetchone()
-        print(results)
+        user_info = cur.fetchone()
+        print(user_info)
 
         con.close()
         session['logged_in'] = True
-        if session['logged_in'] == True:
-            print("kaboom")
-        session['user_email'] = results[2]
-        session['user_fname'] = results[0]
-        session['user_lname'] = results[1]
+        session['user_email'] = user_info[2]
+        session['user_fname'] = user_info[0]
+        session['user_lname'] = user_info[1]
+        return redirect('/')
+        try:
+            user_fname = user_info[0]
+            user_lname = user_info[1]
+            user_email = user_info[2]
+        except IndexError:
+            return redirect('/login?error=invalid=email=or=password')
         return redirect('/')
 
     return render_template('Login.html')
@@ -107,7 +112,7 @@ def render_sign_up_page():
             return render_template('sign_up.html', pass_len=pass_len)
         hashed_password = Bcrypt.generate_password_hash(user_password)
         con = connect_database(DATABASE)
-        query_insert = "INSERT INTO users (user_fname,user_lname, user_email, user_password ) VALUES(?,?,?,?)"
+        query_insert = "INSERT INTO users (user_fname, user_lname, user_email, user_password ) VALUES(?,?,?,?)"
         print('flagged thing kaboom')
         cur = con.cursor()
         cur.execute(query_insert,(user_fname, user_lname ,user_email ,hashed_password))
